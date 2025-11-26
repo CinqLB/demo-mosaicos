@@ -95,6 +95,7 @@ export default function GenericPatternSvg({
 
   // 🎨 Reglas dinámicas de fill por shapeId
   const dynamicSx = useMemo(() => {
+    // @ts-ignore
     const sxRules: Record<string, any> = {};
 
     shapeIds.forEach((id) => {
