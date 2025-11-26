@@ -1,7 +1,7 @@
 // src/components/tile-simulator/GenericPatternSvg.tsx
 "use client";
 
-import { Box } from "@mui/material";
+import { Box, SxProps } from "@mui/material";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const svgCache = new Map<string, string>();
@@ -95,8 +95,7 @@ export default function GenericPatternSvg({
 
   // 🎨 Reglas dinámicas de fill por shapeId
   const dynamicSx = useMemo(() => {
-    // @ts-ignore
-    const sxRules: Record<string, any> = {};
+    const sxRules: Record<string, SxProps> = {};
 
     shapeIds.forEach((id) => {
       const color = shapeColors[id];
