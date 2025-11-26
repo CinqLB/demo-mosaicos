@@ -51,11 +51,15 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
     "mosaic"
   );
 
-  // mosaico para la UI + para exportar textura (siempre será 4x4 internamente)
+  // Para capturar el mosaico (lo que se ve en UI)
   const mosaicRef = useRef<HTMLDivElement | null>(null);
 
-  // URL de la textura del piso (PNG generado desde el mosaico 4x4)
+  // URL de la textura base (lo que salga del mosaico)
   const [floorTextureUrl, setFloorTextureUrl] = useState<string | null>(null);
+  // URL de la textura que realmente usará Three (siempre simulando four-tiles)
+  const [floorTextureForThree, setFloorTextureForThree] = useState<
+    string | null
+  >(null);
 
   const selectedPattern = useMemo(
     () => patterns.find((p) => p.id === selectedPatternId) ?? patterns[0],
@@ -66,8 +70,6 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
     () => sizes.find((s) => s.id === selectedSizeId) ?? sizes[0],
     [sizes, selectedSizeId]
   );
-
-  const hasSvg = !!selectedPattern.svgPath;
 
   // IDs de formas detectadas en el SVG
   const [shapeIds, setShapeIds] = useState<string[]>([]);
@@ -80,14 +82,16 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
     colors[0]?.id ?? null
   );
 
+  const hasSvg = !!selectedPattern.svgPath;
+
   // Resetear shapes/colores al cambiar de patrón
   useEffect(() => {
     setShapeIds([]);
     setShapeColors({});
   }, [selectedPatternId]);
 
-  // Regenerar la textura SIEMPRE desde el mosaico 4x4 (mosaicRef),
-  // independientemente de si la vista actual es one-tile o four-tiles.
+  // Regenerar la textura BASE cuando cambien colores o rotación
+  // (se exporta lo que se ve en mosaicRef)
   useEffect(() => {
     if (!mosaicRef.current) return;
 
@@ -110,6 +114,64 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
       cancelled = true;
     };
   }, [shapeColors, rotation, selectedPattern.svgPath]);
+
+  // Asegurar que la textura que ve Three SIEMPRE sea tipo "four-tiles"
+  useEffect(() => {
+    if (!floorTextureUrl) {
+      setFloorTextureForThree(null);
+      return;
+    }
+
+    // Si estamos en four-tiles, usamos la textura tal cual
+    if (viewMode === "four-tiles") {
+      setFloorTextureForThree(floorTextureUrl);
+      return;
+    }
+
+    // Si la vista es one-tile, generamos una imagen 4x4 a partir de la baldosa
+    let cancelled = false;
+
+    const buildFourTileTexture = async () => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = floorTextureUrl;
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = (e) => reject(e);
+      });
+
+      if (cancelled) return;
+
+      const tileW = img.width;
+      const tileH = img.height;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = tileW * 4;
+      canvas.height = tileH * 4;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          ctx.drawImage(img, x * tileW, y * tileH, tileW, tileH);
+        }
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      setFloorTextureForThree(dataUrl);
+    };
+
+    buildFourTileTexture().catch((err) => {
+      console.error("Error generando textura four-tiles:", err);
+      // fallback: al menos usar la textura base
+      setFloorTextureForThree(floorTextureUrl);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [floorTextureUrl, viewMode]);
 
   const handleShapesDetected = (ids: string[]) => {
     setShapeIds(ids);
@@ -413,7 +475,7 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
           >
             {/* Vista principal del suelo */}
             {previewMode === "mosaic" ? (
-              // === Vista mosaico aislado ===
+              // === Vista mosaico aislado (lo que el usuario ve) ===
               <Box
                 sx={(theme) => ({
                   width: "100%",
@@ -431,7 +493,6 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
                   sx={{
                     width: "100%",
                     height: "100%",
-                    overflow: "hidden",
                   }}
                 >
                   {hasSvg ? (
@@ -440,16 +501,19 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
                         width: "100%",
                         height: "100%",
                         display: "grid",
-                        gridTemplateColumns: "repeat(4, 1fr)",
-                        gridTemplateRows: "repeat(4, 1fr)",
-                        // truco: siempre 4x4 para textura,
-                        // pero si la vista es "one-tile", hacemos zoom al centro
-                        transform:
-                          viewMode === "one-tile" ? "scale(2)" : "scale(1)",
-                        transformOrigin: "center center",
+                        gridTemplateColumns:
+                          viewMode === "four-tiles"
+                            ? "repeat(4, 1fr)"
+                            : "repeat(1, 1fr)",
+                        gridTemplateRows:
+                          viewMode === "four-tiles"
+                            ? "repeat(4, 1fr)"
+                            : "repeat(1, 1fr)",
                       }}
                     >
-                      {Array.from({ length: 16 }).map((_, idx) => (
+                      {Array.from({
+                        length: viewMode === "four-tiles" ? 16 : 1,
+                      }).map((_, idx) => (
                         <Box key={idx}>
                           <GenericPatternSvg
                             svgPath={selectedPattern.svgPath!}
@@ -475,8 +539,8 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
                 </Box>
               </Box>
             ) : (
-              // === Vista mosaico montado en la cocina ===
-              <KitchenFloorPreviewThree patternUrl={floorTextureUrl} />
+              // === Vista mosaico montado en la cocina (Three) ===
+              <KitchenFloorPreviewThree patternUrl={floorTextureForThree} />
             )}
 
             {/* Detalles de configuración */}
