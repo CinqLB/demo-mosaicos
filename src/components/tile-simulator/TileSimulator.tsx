@@ -564,10 +564,10 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
                 Superficie: <strong>{area.toFixed(2)} m²</strong>
               </Typography>
               <Typography variant="body2">
-                Precio/m²: <strong>{pricePerM2.toFixed(2)} €</strong>
+                Precio/m²: <strong>{pricePerM2.toFixed(2)} MXN</strong>
               </Typography>
               <Typography variant="body2" sx={{ mb: 2 }}>
-                Total aprox.: <strong>{totalPrice.toFixed(2)} €</strong>
+                Total aprox.: <strong>{totalPrice.toFixed(2)} MXN</strong>
               </Typography>
             </Box>
           </Box>
