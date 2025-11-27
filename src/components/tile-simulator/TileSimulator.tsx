@@ -28,7 +28,8 @@ import {
 } from "@/lib/tile-simulator/types";
 import GenericPatternSvg from "./GenericPatternSvg";
 import { exportMosaicToImage } from "@/lib/exportMosaicToImage";
-import KitchenFloorPreviewThree from "./KitchenFloorPreviewThree";
+// import KitchenFloorPreviewThree from "./KitchenFloorPreviewThree";
+import LivingRoomPreviewThree from "./LivingRoomPreviewThree";
 
 type Props = {
   patterns: TilePattern[];
@@ -539,8 +540,8 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
                 </Box>
               </Box>
             ) : (
-              // === Vista mosaico montado en la cocina (Three) ===
-              <KitchenFloorPreviewThree patternUrl={floorTextureForThree} />
+              // === Vista mosaico montado en la sala de estar (Three) ===
+              <LivingRoomPreviewThree patternUrl={floorTextureForThree} />
             )}
 
             {/* Detalles de configuración */}
