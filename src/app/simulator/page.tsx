@@ -5,17 +5,17 @@ import TileSimulator from "@/components/tile-simulator/TileSimulator";
 const PATTERNS: TilePattern[] = [
   {
     id: "pattern-A",
-    code: "A",
+    code: "AI",
     name: "Mosaico A (demo)",
-    previewUrl: "/patterns/10667.svg", // mismo archivo
-    svgPath: "/patterns/10667.svg", // mismo archivo
+    previewUrl: "/patterns/de_ai.svg", // mismo archivo
+    svgPath: "/patterns/de_ai.svg", // mismo archivo
   },
   {
     id: "pattern-B",
-    code: "B",
+    code: "JL",
     name: "Mosaico B (demo)",
-    previewUrl: "/patterns/10446.svg", // mismo archivo
-    svgPath: "/patterns/10446.svg", // mismo archivo
+    previewUrl: "/patterns/de_jl.svg", // mismo archivo
+    svgPath: "/patterns/de_jl.svg", // mismo archivo
   },
 ];
 

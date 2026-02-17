@@ -91,6 +91,33 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
     setShapeColors({});
   }, [selectedPatternId]);
 
+  const handleShapesDetected = (ids: string[]) => {
+    setShapeIds(ids);
+
+    // Inicializamos las formas con un color base (ej. primer color de la paleta)
+    setShapeColors((prev) => {
+      const next = { ...prev };
+      const baseColor = colors[0]?.hex ?? "#f5f5f5";
+      ids.forEach((id) => {
+        if (!next[id]) {
+          next[id] = baseColor;
+        }
+      });
+      return next;
+    });
+  };
+
+  const handleShapeClick = (shapeId: string) => {
+    if (!selectedColorId) return;
+    const color = colors.find((c) => c.id === selectedColorId);
+    if (!color) return;
+
+    setShapeColors((prev) => ({
+      ...prev,
+      [shapeId]: color.hex,
+    }));
+  };
+
   // Regenerar la textura BASE cuando cambien colores o rotación
   // (se exporta lo que se ve en mosaicRef)
   useEffect(() => {
@@ -173,33 +200,6 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
       cancelled = true;
     };
   }, [floorTextureUrl, viewMode]);
-
-  const handleShapesDetected = (ids: string[]) => {
-    setShapeIds(ids);
-
-    // Inicializamos las formas con un color base (ej. primer color de la paleta)
-    setShapeColors((prev) => {
-      const next = { ...prev };
-      const baseColor = colors[0]?.hex ?? "#f5f5f5";
-      ids.forEach((id) => {
-        if (!next[id]) {
-          next[id] = baseColor;
-        }
-      });
-      return next;
-    });
-  };
-
-  const handleShapeClick = (shapeId: string) => {
-    if (!selectedColorId) return;
-    const color = colors.find((c) => c.id === selectedColorId);
-    if (!color) return;
-
-    setShapeColors((prev) => ({
-      ...prev,
-      [shapeId]: color.hex,
-    }));
-  };
 
   const pricePerM2 = useMemo(() => {
     const baseArea = 15 * 15;
@@ -474,75 +474,79 @@ export default function TileSimulator({ patterns, colors, sizes }: Props) {
               alignItems: "flex-start",
             }}
           >
-            {/* Vista principal del suelo */}
-            {previewMode === "mosaic" ? (
-              // === Vista mosaico aislado (lo que el usuario ve) ===
+            {/* Vista mosaico (siempre montada, se oculta con display) */}
+            <Box
+              sx={(theme) => ({
+                width: "100%",
+                maxWidth: 520,
+                mx: "auto",
+                aspectRatio: "1 / 1",
+                borderRadius: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                overflow: "hidden",
+                position: "relative",
+                display: previewMode === "mosaic" ? "block" : "none",
+              })}
+            >
               <Box
-                sx={(theme) => ({
+                ref={mosaicRef}
+                sx={{
                   width: "100%",
-                  maxWidth: 520,
-                  mx: "auto",
-                  aspectRatio: "1 / 1",
-                  borderRadius: 2,
-                  border: `1px solid ${theme.palette.divider}`,
-                  overflow: "hidden",
-                  position: "relative",
-                })}
+                  height: "100%",
+                }}
               >
-                <Box
-                  ref={mosaicRef}
-                  sx={{
-                    width: "100%",
-                    height: "100%",
-                  }}
-                >
-                  {hasSvg ? (
-                    <Box
-                      sx={{
-                        width: "100%",
-                        height: "100%",
-                        display: "grid",
-                        gridTemplateColumns:
-                          viewMode === "four-tiles"
-                            ? "repeat(4, 1fr)"
-                            : "repeat(1, 1fr)",
-                        gridTemplateRows:
-                          viewMode === "four-tiles"
-                            ? "repeat(4, 1fr)"
-                            : "repeat(1, 1fr)",
-                      }}
-                    >
-                      {Array.from({
-                        length: viewMode === "four-tiles" ? 16 : 1,
-                      }).map((_, idx) => (
-                        <Box key={idx}>
-                          <GenericPatternSvg
-                            svgPath={selectedPattern.svgPath!}
-                            shapeColors={shapeColors}
-                            rotationDeg={rotation}
-                            onShapesDetected={
-                              idx === 0 ? handleShapesDetected : undefined
-                            }
-                            onShapeClick={handleShapeClick}
-                          />
-                        </Box>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Box
-                      sx={{
-                        width: "100%",
-                        height: "100%",
-                        backgroundColor: "#e0e0e0",
-                      }}
-                    />
-                  )}
-                </Box>
+                {hasSvg ? (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      display: "grid",
+                      gridTemplateColumns:
+                        viewMode === "four-tiles"
+                          ? "repeat(4, 1fr)"
+                          : "repeat(1, 1fr)",
+                      gridTemplateRows:
+                        viewMode === "four-tiles"
+                          ? "repeat(4, 1fr)"
+                          : "repeat(1, 1fr)",
+                    }}
+                  >
+                    {Array.from({
+                      length: viewMode === "four-tiles" ? 16 : 1,
+                    }).map((_, idx) => (
+                      <Box key={idx}>
+                        <GenericPatternSvg
+                          svgPath={selectedPattern.svgPath!}
+                          shapeColors={shapeColors}
+                          rotationDeg={rotation}
+                          onShapesDetected={
+                            idx === 0 ? handleShapesDetected : undefined
+                          }
+                          onShapeClick={handleShapeClick}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: "#e0e0e0",
+                    }}
+                  />
+                )}
               </Box>
-            ) : (
-              // === Vista mosaico montado en la sala de estar (Three) ===
+            </Box>
+
+            {/* Vista cocina / sala (Three) - también siempre montada */}
+            <Box
+              sx={{
+                display: previewMode === "kitchen" ? "block" : "none",
+              }}
+            >
               <LivingRoomPreviewThree patternUrl={floorTextureForThree} />
-            )}
+            </Box>
 
             {/* Detalles de configuración */}
             <Box>
